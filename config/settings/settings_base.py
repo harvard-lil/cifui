@@ -1,7 +1,6 @@
 import environ
-import os
 
-root = environ.Path(__file__) - 1
+root = environ.Path(__file__) - 3
 env = environ.Env(DEBUG=(bool, False),)
 environ.Env.read_env()  # reading .env file
 
@@ -112,7 +111,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = (
     root('static'),
 )
-
 
 # SMS
 
