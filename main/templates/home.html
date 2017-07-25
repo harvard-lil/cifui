@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container">
+    <h1>Can I Fair Use It?</h1>
+
+    <ul>
+      {% for hypo in hypos %}
+        <li><a href="{% url 'single_hypo' hypo.pk %}">{{ hypo }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}
