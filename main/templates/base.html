@@ -3,16 +3,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Your page title here :)</title>
+  <title>Can I Fair Use It? - {% block title %}{% endblock %}</title>
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="{% static "css/normalize.css" %}">
   <link rel="stylesheet" href="{% static "css/skeleton.css" %}">
+  <link rel="stylesheet" href="{% static "css/main.css" %}">
   <link rel="icon" type="image/png" href="{% static "images/favicon.png" %}">
 </head>
 <body>
+  <header>
+    <div class="container">
+      <a href="/">Can I Fair Use It?</a>
+
+      <div style="float:right">
+        {% if request.user.is_anonymous %}
+          <a href="{% url "login" %}">Log in</a>
+        {% else %}
+          Logged in as {{ request.user.email }} - <a href="{% url "logout" %}">Log out</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
   {% block content %}{% endblock %}
 </body>
 </html>

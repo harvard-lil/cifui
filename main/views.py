@@ -1,9 +1,10 @@
 import re
+
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.humanize.templatetags.humanize import ordinal
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
-from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
@@ -11,12 +12,14 @@ from .sms import sms_client
 from .models import Hypo, SMSResponse, Vote
 
 
+@login_required
 def home(request):
     hypos = Hypo.objects.filter(status='sent')
     return render(request, 'home.html', {'hypos': hypos})
 
+@login_required
 def single_hypo(request, hypo_id):
-    hypo = get_object_or_404(Hypo, pk=hypo_id)
+    hypo = get_object_or_404(Hypo, pk=hypo_id, status='sent')
     return render(request, 'hypo.html', {'hypo': hypo})
 
 @csrf_exempt
@@ -41,42 +44,38 @@ def receive_sms(request):
     # process
     if user:
         vote = Vote.objects.filter(user=user).order_by('-sent_date').first()
-        hypo_url = request.build_absolute_uri(vote.hypo.get_absolute_url())
 
         # only let them vote once
         if vote.reply_date:
-            user.profile.send_sms("You have already responded to the latest hypo. See all responses at %s" % hypo_url)
+            vote.comments.add(sms_response)
             return HttpResponse()
 
         # parse vote
-        fair_use_vote = None
-        if re.search(r'\byes\b', text, flags=re.I):
-            fair_use_vote = True
-        elif re.search(r'\bno\b', text, flags=re.I):
-            fair_use_vote = False
-
-        if fair_use_vote is None:
+        m = re.match(r'^[\s\.\']*(yes|no)[\s\.\']*$', text, flags=re.I)
+        if not m:
             # can't parse response
             user.profile.send_sms("We don't understand your response. Please respond 'yes' or 'no'.")
+            return HttpResponse()
 
-        else:
-            # record vote
-            vote.fair_use_vote = fair_use_vote
-            vote.reply_message = sms_response
-            vote.reply_date = timezone.now()
-            vote.save()
+        # record vote
+        fair_use_vote = m.group(1).lower() == 'yes'
+        vote.fair_use_vote = fair_use_vote
+        vote.reply_message = sms_response
+        vote.reply_date = timezone.now()
+        vote.save()
 
-            # send confirmation
-            vote_count = vote.hypo.votes.exclude(reply_date__isnull=True).count()
-            message = (
-                "Your prediction has been recorded as: %s. "
-                "You are the %s person to respond. "
-                "You can see other responses at %s."
-            ) % (
-                "yes, a court would find fair use" if fair_use_vote else "no, a court would not find fair use",
-                ordinal(vote_count),
-                hypo_url
-            )
-            user.profile.send_sms(message)
+        # send confirmation
+        vote_count = vote.hypo.votes.exclude(reply_date__isnull=True).count()
+        message = (
+            "Thanks! Your prediction is: %s.\n"
+            "You are the %s person to respond.\n"
+            "You can now see other responses at the website.\n"
+            "If you have any comments for us about this hypo, you can text them now."
+        ) % (
+            "yes, a court would find fair use" if fair_use_vote else "no, a court would not find fair use",
+            ordinal(vote_count)
+        )
+        user.profile.send_sms(message)
 
     return HttpResponse()
+

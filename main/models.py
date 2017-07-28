@@ -79,15 +79,18 @@ class SMSResponse(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False, help_text='Whether message is verified as coming from Plivo')
 
+    class Meta:
+        ordering = ['date']
+
 class Vote(models.Model):
     hypo = models.ForeignKey(Hypo, related_name='votes')
     user = models.ForeignKey(User, related_name='votes')
 
     sent_date = models.DateTimeField(auto_now_add=True)
-    sent_message = models.ForeignKey(SMSMessage, blank=True, null=True)
+    sent_message = models.OneToOneField(SMSMessage, blank=True, null=True, related_name='vote')
 
     reply_date = models.DateTimeField(blank=True, null=True)
-    reply_message = models.ForeignKey(SMSResponse, blank=True, null=True)
+    reply_message = models.OneToOneField(SMSResponse, blank=True, null=True, related_name='vote')
 
     fair_use_vote = models.NullBooleanField(blank=True, null=True)
-    comments = models.TextField(blank=True, null=True)
+    comments = models.ManyToManyField(SMSResponse, related_name='comment_votes')

@@ -64,3 +64,23 @@ admin.site.register(SMSMessage, SMSMessageAdmin)
 class SMSResponseAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone_number', 'text', 'date')
 admin.site.register(SMSResponse, SMSResponseAdmin)
+
+
+### Vote ###
+
+class CommentInline(admin.TabularInline):
+    model = Vote.comments.through
+    show_change_link = True
+    fields = ['date', 'text']
+    readonly_fields = ['date', 'text']
+
+    def date(self, obj):
+        return obj.smsresponse.date
+
+    def text(self, obj):
+        return obj.smsresponse.text
+
+class VoteAdmin(admin.ModelAdmin):
+    inlines = [CommentInline]
+    list_display = ('hypo', 'user', 'sent_date', 'reply_date', 'fair_use_vote')
+admin.site.register(Vote, VoteAdmin)

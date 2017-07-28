@@ -1,0 +1,21 @@
+header{
+    padding: 1em 0;
+    margin-bottom: 1em;
+    background-color: gray;
+}
+header a{
+    text-decoration: none;
+    color: white;
+}
+header a:hover{
+    text-decoration: underline;
+    color: white;
+}
+
+.fair_use{
+    color: #7CC435;
+}
+
+.not_fair_use{
+    color: #D55E00;
+}

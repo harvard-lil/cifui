@@ -3,24 +3,28 @@
 {% block content %}
   <div class="container">
     <h1>Hypo: {{ hypo.title }}</h1>
-    <p>On {{ hypo.send_time|date:"F j, Y" }} we asked our panel of experts the following question:</p>
+    <p>On {{ hypo.send_time|date:"F j, Y" }} we asked the panel the following question:</p>
     <blockquote>
       {{ hypo.text }}
-      If you had to guess 'yes' or 'no', would a court find this to be fair use?
+      <p>If you had to guess 'yes' or 'no', would a court find this to be fair use?</p>
     </blockquote>
 
     <h2>Responses:</h2>
     {% for vote in hypo.votes.all %}
       <div class="vote row">
-        <div class="two column">
+        <div class="two columns">
           {{ vote.user.profile.pseudonym }}
         </div>
-        <div class="two column">
+        <div class="two columns {% if vote.fair_use_vote %}fair_use{% else %}not_fair_use{% endif %}">
           {% if vote.fair_use_vote %}IS fair use{% else %}IS NOT fair use{% endif %}
         </div>
-        <div class="eight column">
-          {{ vote.comments }}
-        </div>
+        {% if request.user.is_superuser %}
+          <div class="eight columns">
+            {% for comment in vote.comments.all %}
+              <p>{{ comment.text }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
     {% endfor %}
   </div>

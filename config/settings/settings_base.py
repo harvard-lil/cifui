@@ -50,6 +50,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request',
             ],
         },
     },
@@ -118,3 +119,6 @@ PLIVO_FROM_NUMBER = env('PLIVO_FROM_NUMBER', default=None)
 PLIVO_AUTH_ID = env('PLIVO_AUTH_ID', default=None)
 PLIVO_AUTH_TOKEN = env('PLIVO_AUTH_TOKEN', default=None)
 PLIVO_APPLICATION_ID = env('PLIVO_APPLICATION_ID', default=None)
+
+
+LOGIN_REDIRECT_URL = '/'
