@@ -1,11 +1,13 @@
 import json
-
 import plivo
+import pytz
+
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
 
 def choices(*args):
     return zip(args, args)
@@ -16,6 +18,7 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=255, blank=True)
     send_by_phone = models.BooleanField(default=False)
     send_by_email = models.BooleanField(default=False)
+    timezone = models.CharField(max_length=255, choices=choices(*sorted(pytz.all_timezones_set)), default='US/Eastern')
 
     def send_sms(self, text):
         message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text)
@@ -97,6 +100,6 @@ class Vote(models.Model):
     reply_message = models.OneToOneField(SMSResponse, blank=True, null=True, related_name='vote')
 
     fair_use_vote = models.NullBooleanField(blank=True, null=True)
-    comments = models.ManyToManyField(SMSResponse, related_name='comment_votes')
+    comments = models.ManyToManyField(SMSResponse, related_name='comment_votes', blank=True)
 
     objects = VoteQuerySet.as_manager()
