@@ -40,7 +40,7 @@ class Hypo(models.Model):
     status = models.CharField(max_length=20, choices=choices('draft', 'queued', 'sent'), default='draft')
 
     class Meta:
-        ordering = ['send_time']
+        ordering = ['-send_time']
 
     def __str__(self):
         return self.title

@@ -6,7 +6,13 @@
 
     <ul>
       {% for hypo in hypos %}
-        <li><a href="{% url 'single_hypo' hypo.pk %}">{{ hypo }}</a></li>
+        <li>
+          {% if forloop.first and not voted_in_latest %}
+            <i>{{ hypo }} (respond via text to unlock)</i>
+          {% else %}
+            <a href="{% url 'single_hypo' hypo.pk %}">{{ hypo }}</a>
+          {% endif %}
+        </li>
       {% endfor %}
     </ul>
   </div>

@@ -14,8 +14,12 @@ from .models import Hypo, SMSResponse, Vote
 
 @login_required
 def home(request):
-    hypos = Hypo.objects.filter(status='sent')
-    return render(request, 'home.html', {'hypos': hypos})
+    hypos = list(Hypo.objects.filter(status='sent'))
+    voted_in_latest = hypos[0].votes.complete().filter(user=request.user).exists()
+    return render(request, 'home.html', {
+        'hypos': hypos,
+        'voted_in_latest': voted_in_latest
+    })
 
 @login_required
 def single_hypo(request, hypo_id):
