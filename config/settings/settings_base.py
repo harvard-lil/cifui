@@ -122,3 +122,22 @@ PLIVO_APPLICATION_ID = env('PLIVO_APPLICATION_ID', default=None)
 
 
 LOGIN_REDIRECT_URL = '/'
+
+
+# Logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': env('DJANGO_LOG_LEVEL', default='INFO'),
+        },
+    },
+}
