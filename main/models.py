@@ -82,6 +82,10 @@ class SMSResponse(models.Model):
     class Meta:
         ordering = ['date']
 
+class VoteQuerySet(models.QuerySet):
+    def complete(self):
+        return self.exclude(fair_use_vote=None)
+
 class Vote(models.Model):
     hypo = models.ForeignKey(Hypo, related_name='votes')
     user = models.ForeignKey(User, related_name='votes')
@@ -94,3 +98,5 @@ class Vote(models.Model):
 
     fair_use_vote = models.NullBooleanField(blank=True, null=True)
     comments = models.ManyToManyField(SMSResponse, related_name='comment_votes')
+
+    objects = VoteQuerySet.as_manager()

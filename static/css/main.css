@@ -19,3 +19,7 @@ header a:hover{
 .not_fair_use{
     color: #D55E00;
 }
+
+.comments p{
+    margin-bottom: 0;
+}

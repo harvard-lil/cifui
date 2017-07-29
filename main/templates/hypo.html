@@ -10,7 +10,12 @@
     </blockquote>
 
     <h2>Responses:</h2>
-    {% for vote in hypo.votes.all %}
+
+    {% if request.user.is_superuser %}
+      <p><i>Comments are visible to you because you are logged in as an administrator.</i></p>
+    {% endif %}
+
+    {% for vote in hypo.votes.complete %}
       <div class="vote row">
         <div class="two columns">
           {{ vote.user.profile.pseudonym }}
@@ -19,7 +24,7 @@
           {% if vote.fair_use_vote %}IS fair use{% else %}IS NOT fair use{% endif %}
         </div>
         {% if request.user.is_superuser %}
-          <div class="eight columns">
+          <div class="eight columns comments">
             {% for comment in vote.comments.all %}
               <p>{{ comment.text }}</p>
             {% endfor %}
