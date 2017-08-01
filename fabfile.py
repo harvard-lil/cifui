@@ -64,26 +64,28 @@ def send_pending_hypo():
 def import_users(csv_path, database='default'):
     words = open('assets/google-10000-english-usa-no-swears.txt').read().strip().split()
     pseudonyms = open('assets/nicknames.txt').read().strip().split("\n")
+    existing_usernames = set(User.objects.using(database).values_list('username', flat=True))
     with open(csv_path) as in_file:
-        csv_file = csv.DictReader(in_file)
-        for entry in csv_file:
-            if entry['Confirmed text number']:
-                if not entry['Email']:
-                    print("WARNING: User %s has no email address. Skipping." % entry['Confirmed text number'])
-                    continue
-                print(entry['Email'])
-                password = "-".join(SystemRandom().sample(words, 3))
-                available_pseudonyms = list(set(pseudonyms) - set(Profile.objects.using(database).values_list('pseudonym', flat=True)))
-                try:
-                    user = User.objects.using(database).create_user(username=entry['Email'],
+        with open('user_passwords.txt', 'a') as password_out:
+            csv_file = csv.DictReader(in_file)
+            for entry in csv_file:
+                if entry['Confirmed text number']:
+                    if not entry['Email']:
+                        print("WARNING: User %s has no email address. Skipping." % entry['Confirmed text number'])
+                        continue
+                    if entry['Email'] in existing_usernames:
+                        print("WARNING: User %s already exists, skipping." % entry['Email'])
+                        continue
+                    print(entry['Email'])
+                    password = "-".join(SystemRandom().sample(words, 3))
+                    available_pseudonyms = list(set(pseudonyms) - set(Profile.objects.using(database).values_list('pseudonym', flat=True)))
+                    user = User.objects.db_manager(database).create_user(username=entry['Email'],
                                                     email=entry['Email'],
                                                     first_name=entry['First'],
                                                     last_name=entry['Last'],
                                                     password=password)
-                except IntegrityError:
-                    print("WARNING: User %s already exists, skipping." % entry['Email'])
-                    continue
-                user.profile.pseudonym = SystemRandom().choice(available_pseudonyms)
-                user.profile.phone_number = '1' + re.sub(r'\D', '', entry['Confirmed text number'])
-                user.profile.send_by_phone = True
-                user.profile.save(using=database)
+                    password_out.write("%s\t%s\n" % (user.email, password))
+                    user.profile.pseudonym = SystemRandom().choice(available_pseudonyms)
+                    user.profile.phone_number = '1' + re.sub(r'\D', '', entry['Confirmed text number'])
+                    user.profile.send_by_phone = True
+                    user.profile.save(using=database)
