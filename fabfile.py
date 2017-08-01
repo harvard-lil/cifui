@@ -1,5 +1,8 @@
 import os
+
 import django
+import re
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 try:
@@ -8,13 +11,18 @@ except Exception as e:
     print("WARNING: Can't configure Django -- tasks depending on Django will fail:\n%s" % e)
 
 from urllib.parse import urljoin
+import csv
+from random import SystemRandom
 import pexpect
 import plivo
 from django.urls import reverse
+from django.contrib.auth.models import User
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from fabric.api import local
 from fabric.decorators import task
 from main import sms
+from main.models import Profile
 
 
 @task(alias='run')
@@ -50,3 +58,32 @@ def run_live():
 @task
 def send_pending_hypo():
     sms.send_pending_hypo()
+
+@task
+@transaction.atomic
+def import_users(csv_path, database='default'):
+    words = open('assets/google-10000-english-usa-no-swears.txt').read().strip().split()
+    pseudonyms = open('assets/nicknames.txt').read().strip().split("\n")
+    with open(csv_path) as in_file:
+        csv_file = csv.DictReader(in_file)
+        for entry in csv_file:
+            if entry['Confirmed text number']:
+                if not entry['Email']:
+                    print("WARNING: User %s has no email address. Skipping." % entry['Confirmed text number'])
+                    continue
+                print(entry['Email'])
+                password = "-".join(SystemRandom().sample(words, 3))
+                available_pseudonyms = list(set(pseudonyms) - set(Profile.objects.using(database).values_list('pseudonym', flat=True)))
+                try:
+                    user = User.objects.using(database).create_user(username=entry['Email'],
+                                                    email=entry['Email'],
+                                                    first_name=entry['First'],
+                                                    last_name=entry['Last'],
+                                                    password=password)
+                except IntegrityError:
+                    print("WARNING: User %s already exists, skipping." % entry['Email'])
+                    continue
+                user.profile.pseudonym = SystemRandom().choice(available_pseudonyms)
+                user.profile.phone_number = '1' + re.sub(r'\D', '', entry['Confirmed text number'])
+                user.profile.send_by_phone = True
+                user.profile.save(using=database)

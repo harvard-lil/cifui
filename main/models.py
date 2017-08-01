@@ -14,7 +14,7 @@ def choices(*args):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    pseudonym = models.CharField(max_length=255, blank=True)
+    pseudonym = models.CharField(max_length=255, blank=True, null=True, unique=True, default='Anonymous User')
     phone_number = models.CharField(max_length=255, blank=True)
     send_by_phone = models.BooleanField(default=False)
     send_by_email = models.BooleanField(default=False)
