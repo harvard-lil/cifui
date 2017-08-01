@@ -15,7 +15,7 @@ from .models import Hypo, SMSResponse, Vote
 @login_required
 def home(request):
     hypos = list(Hypo.objects.filter(status='sent'))
-    voted_in_latest = hypos[0].votes.complete().filter(user=request.user).exists()
+    voted_in_latest = hypos and hypos[0].votes.complete().filter(user=request.user).exists()
     return render(request, 'home.html', {
         'hypos': hypos,
         'voted_in_latest': voted_in_latest
