@@ -12,11 +12,12 @@ chardet==3.0.4            # via requests
 click==6.7                # via pip-tools
 cryptography==2.0         # via paramiko
 django-environ==0.4.3
-django==1.11.3            # via django-environ
+django==1.11.3
 fabric3==1.13.1.post1
 first==2.0.1              # via pip-tools
 gunicorn==19.7.1
 idna==2.5                 # via cryptography, requests
+jsonfield==2.0.2
 paramiko==2.2.1           # via fabric3
 pexpect==4.2.1
 pip-tools==1.9.0
@@ -25,9 +26,12 @@ psycopg2==2.7.3
 ptyprocess==0.5.2         # via pexpect
 pyasn1==0.2.3             # via paramiko
 pycparser==2.18           # via cffi
+pyjwt==1.5.0              # via twilio
 pynacl==1.1.2             # via paramiko
-pytz==2017.2              # via django
-requests==2.18.1          # via plivo
-six==1.10.0               # via bcrypt, cryptography, django-environ, fabric3, pip-tools, pynacl
+pysocks==1.6.7            # via twilio
+pytz==2017.2              # via django, twilio
+requests==2.18.1          # via plivo, twilio
+six==1.10.0               # via bcrypt, cryptography, django-environ, fabric3, pip-tools, pynacl, twilio
+twilio==6.5.0
 urllib3==1.21.1           # via requests
 whitenoise==3.3.0

@@ -89,3 +89,37 @@ def import_users(csv_path, database='default'):
                     user.profile.phone_number = '1' + re.sub(r'\D', '', entry['Confirmed text number'])
                     user.profile.send_by_phone = True
                     user.profile.save(using=database)
+
+@task
+def send_password_emails(path):
+    from django.core.mail import send_mail
+
+    lines = open(path).read().strip().split("\n")
+    emails = {}
+    for line in lines:
+        print(line)
+        k, v = line.split("\t")
+        emails[k] = v
+    for email, password in emails.items():
+        send_mail('Your CanIFairUseIt website account', """
+Hi!
+
+We'll shortly start sending out the daily hypo for the CanIFairUseIt experiment. Once you've sent your response,
+you can view other anonymized responses here:
+
+Website:  https://canifairuseit.com/
+Username: %s
+Password: %s
+
+Please let us know if you have any questions.
+
+Best,
+Jack, Kyle, and Katie
+""" % (email, password), 'info@canifairuseit.com', [email])
+
+
+@task
+def fetch_all_phone_info():
+    for profile in Profile.objects.exclude(phone_number='').filter(phone_info=None):
+        print(profile.phone_number)
+        profile.fetch_phone_info()

@@ -7,3 +7,5 @@ pexpect==4.2.1
 gunicorn==19.7.1
 django-environ==0.4.3
 psycopg2==2.7.3
+twilio==6.5.0
+jsonfield==2.0.2

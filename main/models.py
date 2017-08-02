@@ -1,5 +1,8 @@
 import json
+
+import jsonfield
 import plivo
+import twilio.rest
 import pytz
 
 from django.conf import settings
@@ -16,6 +19,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     pseudonym = models.CharField(max_length=255, blank=True, null=True, unique=True, default='Anonymous User')
     phone_number = models.CharField(max_length=255, blank=True)
+    phone_info = jsonfield.JSONField(max_length=255, blank=True, null=True)
     send_by_phone = models.BooleanField(default=False)
     send_by_email = models.BooleanField(default=False)
     timezone = models.CharField(max_length=255, choices=choices(*sorted(pytz.all_timezones_set)), default='US/Eastern')
@@ -24,6 +28,12 @@ class Profile(models.Model):
         message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text)
         message.send()
         return message
+
+    def fetch_phone_info(self):
+        twilio_client = twilio.rest.Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        number = twilio_client.lookups.phone_numbers("+%s" % self.phone_number).fetch(type="carrier")
+        self.phone_info = number.carrier
+        self.save()
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
