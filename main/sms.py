@@ -1,6 +1,5 @@
-import json
-
 import plivo
+import time
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -12,7 +11,7 @@ from .models import Hypo, Vote
 
 sms_client = plivo.RestAPI(settings.PLIVO_AUTH_ID, settings.PLIVO_AUTH_TOKEN)
 
-def send_pending_hypo():
+def send_pending_hypo(sleep=0):
     # find and claim next hypo
     with transaction.atomic():
         hypo = Hypo.objects.filter(status='queued', send_time__lte=timezone.now()).select_for_update().first()
@@ -35,10 +34,7 @@ def send_pending_hypo():
         vote.save()
 
         # send
-        message = (
-            "Hello! Here's your hypo for today:\n\n"
-            "%s\n\n"
-            "If you had to guess 'yes' or 'no', would a court find this to be fair use?"
-        ) % (hypo.text,)
-        vote.sent_message = user.profile.send_sms(message)
-        vote.save()
+        vote.send()
+
+        # sleep
+        time.sleep(sleep)

@@ -18,11 +18,11 @@ import plivo
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from fabric.api import local
 from fabric.decorators import task
 from main import sms
-from main.models import Profile
+from main.models import Profile, Vote
 
 
 @task(alias='run')
@@ -56,8 +56,8 @@ def run_live():
         ngrok.close()
 
 @task
-def send_pending_hypo():
-    sms.send_pending_hypo()
+def send_pending_hypo(sleep=0):
+    sms.send_pending_hypo(int(sleep))
 
 @task
 @transaction.atomic
@@ -123,3 +123,8 @@ def fetch_all_phone_info():
     for profile in Profile.objects.exclude(phone_number='').filter(phone_info=None):
         print(profile.phone_number)
         profile.fetch_phone_info()
+
+@task
+def resend_message(email, hypo_id):
+    vote = Vote.objects.get(user__email=email, hypo_id=hypo_id)
+    vote.send(record=False)

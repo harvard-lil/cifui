@@ -113,3 +113,15 @@ class Vote(models.Model):
     comments = models.ManyToManyField(SMSResponse, related_name='comment_votes', blank=True)
 
     objects = VoteQuerySet.as_manager()
+
+    def send(self, record=True):
+        message = (
+            "Hi, %s! Here's your hypo for today:\n\n"
+            "%s\n\n"
+            "If you had to guess 'yes' or 'no', would a court find this to be fair use?"
+        ) % (self.user.first_name, self.hypo.text,)
+        sent_message = self.user.profile.send_sms(message)
+        if record:
+            self.sent_message = sent_message
+            self.save()
+
