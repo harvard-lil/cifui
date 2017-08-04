@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .sms import sms_client
-from .models import Hypo, SMSResponse, Vote
+from .models import Hypo, SMSResponse, Vote, SMSNumber
 
 
 @login_required
@@ -30,20 +30,24 @@ def single_hypo(request, hypo_id):
 def receive_sms(request):
     print("SMS RECEIVED:", request.POST)
     from_number = request.POST.get('From')
+    server_number = SMSNumber.objects.filter(phone_number=request.POST.get('To')).first()
+    message_uuid = request.POST.get('MessageUUID')
     text = request.POST.get('Text')
 
     user = User.objects.filter(profile__phone_number=from_number).first()
 
     # record all messages
-    sms_response = SMSResponse(user=user, text=text, phone_number=from_number)
+    sms_response = SMSResponse(user=user, text=text, phone_number=from_number, message_uuid=message_uuid, server_number=server_number)
     sms_response.save()
 
     # verify origin
-    response = sms_client.get_message({'message_uuid': request.POST.get('MessageUUID')})
-    if response[0] != 200:
+    response = sms_response.api_response = sms_client.get_message({'message_uuid': message_uuid})
+    if response[0] == 200:
+        sms_response.verified = True
+        sms_response.save()
+    else:
+        sms_response.save()
         return HttpResponse()  # return blank response for unverified message
-    sms_response.verified = True
-    sms_response.save()
 
     # process
     if user:

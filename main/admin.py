@@ -49,6 +49,7 @@ admin.site.register(User, CustomUserAdmin)
 class VoteInline(admin.TabularInline):
     model = Vote
     show_change_link = True
+    raw_id_fields = ['comments']
 
 class HypoAdmin(admin.ModelAdmin):
     inlines = [VoteInline]

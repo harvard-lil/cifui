@@ -22,7 +22,7 @@ from django.db import transaction
 from fabric.api import local
 from fabric.decorators import task
 from main import sms
-from main.models import Profile, Vote
+from main.models import Profile, Vote, SMSNumber
 
 
 @task(alias='run')
@@ -128,3 +128,44 @@ def fetch_all_phone_info():
 def resend_message(email, hypo_id):
     vote = Vote.objects.get(user__email=email, hypo_id=hypo_id)
     vote.send(record=False)
+
+@task
+def assign_numbers_for_users():
+    unused_numbers = list(SMSNumber.objects.filter(profiles=None))
+    sms_client = plivo.RestAPI(settings.PLIVO_AUTH_ID, settings.PLIVO_AUTH_TOKEN)
+    number_infos = []
+
+    for profile in Profile.objects.filter(send_by_phone=True, server_number=None):
+        print(profile.user)
+        new_number = None
+        if unused_numbers:
+            new_number = unused_numbers.pop()
+        else:
+            # buy
+            if not number_infos:
+                response = sms_client.search_phone_numbers({
+                    'country_iso': 'US',
+                    'pattern': '617',
+                    'services': 'sms'
+                })
+                number_infos.extend(response[1]['objects'])
+            number_info = number_infos.pop(0)
+            alias = "CIFUI %s - %s" % ("Dev" if settings.DEBUG else "Prod", profile.user.email)
+            print("buying: ", number_info)
+            response = sms_client.buy_phone_number({
+                'number': number_info['number'],
+                'app_id': settings.PLIVO_APPLICATION_ID,
+                'alias': alias,
+            })
+            print("response:", response)
+
+            if response[0] == 201 and response[1]['status'] == 'fulfilled':
+                # number bought
+                new_number = SMSNumber(phone_number=number_info['number'])
+                new_number.save()
+            else:
+                print("WARNING: Unable to purchase number!")
+
+        if new_number:
+            profile.server_number = new_number
+            profile.save()

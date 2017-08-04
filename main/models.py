@@ -15,6 +15,13 @@ from django.dispatch import receiver
 def choices(*args):
     return zip(args, args)
 
+class SMSNumber(models.Model):
+    phone_number = models.CharField(max_length=255)
+    service = models.CharField(max_length=10, default='plivo', choices=choices(('plivo', 'twilio')))
+
+    def __str__(self):
+        return self.phone_number
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     pseudonym = models.CharField(max_length=255, blank=True, null=True, unique=True, default='Anonymous User')
@@ -23,9 +30,10 @@ class Profile(models.Model):
     send_by_phone = models.BooleanField(default=False)
     send_by_email = models.BooleanField(default=False)
     timezone = models.CharField(max_length=255, choices=choices(*sorted(pytz.all_timezones_set)), default='US/Eastern')
+    server_number = models.ForeignKey(SMSNumber, blank=True, null=True, related_name='profiles')
 
     def send_sms(self, text):
-        message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text)
+        message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text, server_number=self.server_number)
         message.send()
         return message
 
@@ -65,21 +73,22 @@ class Hypo(models.Model):
 class SMSMessage(models.Model):
     user = models.ForeignKey(User, related_name='sms_messages', blank=True, null=True)
     phone_number = models.CharField(max_length=255)
+    server_number = models.ForeignKey(SMSNumber, blank=True, null=True)
     text = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     success = models.NullBooleanField()
-    api_response = models.TextField(blank=True, null=True)
+    api_response = jsonfield.JSONField(blank=True, null=True)
 
     def send(self):
         sms_client = plivo.RestAPI(settings.PLIVO_AUTH_ID, settings.PLIVO_AUTH_TOKEN)
         try:
             response = sms_client.send_message({
-                'src': settings.PLIVO_FROM_NUMBER,
+                'src': self.server_number.phone_number,
                 'dst' : self.phone_number,
                 'text' : self.text
             })
             self.success = response[0] == 202
-            self.api_response = json.dumps(response)
+            self.api_response = response
         except Exception as e:
             self.success = False
             self.api_response = str(e)
@@ -88,8 +97,11 @@ class SMSMessage(models.Model):
 class SMSResponse(models.Model):
     user = models.ForeignKey(User, related_name='sms_responses', blank=True, null=True)
     phone_number = models.CharField(max_length=255)
+    server_number = models.ForeignKey(SMSNumber, blank=True, null=True)
+    message_uuid = models.CharField(max_length=255, blank=True, null=True)
     text = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
+    api_response = jsonfield.JSONField(blank=True, null=True)
     verified = models.BooleanField(default=False, help_text='Whether message is verified as coming from Plivo')
 
     class Meta:
