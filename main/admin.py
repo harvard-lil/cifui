@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import Hypo, Profile, Vote, SMSMessage, SMSResponse
+from .models import Hypo, Profile, Vote, SMSMessage, SMSResponse, SMSNumber
 
 
 ### Helpers ###
@@ -86,3 +86,10 @@ class VoteAdmin(admin.ModelAdmin):
     inlines = [CommentInline]
     list_display = ('hypo', 'user', 'sent_date', 'reply_date', 'fair_use_vote')
 admin.site.register(Vote, VoteAdmin)
+
+
+### SMSNumber ###
+
+class SMSNumberAdmin(admin.ModelAdmin):
+    list_display = ('phone_number', 'service', 'description')
+admin.site.register(SMSNumber, SMSNumberAdmin)

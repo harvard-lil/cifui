@@ -17,10 +17,11 @@ def choices(*args):
 
 class SMSNumber(models.Model):
     phone_number = models.CharField(max_length=255)
-    service = models.CharField(max_length=10, default='plivo', choices=choices(('plivo', 'twilio')))
+    service = models.CharField(max_length=10, default='plivo', choices=choices('plivo', 'twilio'))
+    description = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return self.phone_number
+        return "%s - %s" % (self.phone_number, self.description)
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
