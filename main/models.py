@@ -33,8 +33,8 @@ class Profile(models.Model):
     timezone = models.CharField(max_length=255, choices=choices(*sorted(pytz.all_timezones_set)), default='US/Eastern')
     server_number = models.ForeignKey(SMSNumber, blank=True, null=True, related_name='profiles')
 
-    def send_sms(self, text):
-        message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text, server_number=self.server_number)
+    def send_sms(self, text, server_number=None):
+        message = SMSMessage(user=self.user, phone_number=self.phone_number, text=text, server_number=server_number or self.server_number)
         message.send()
         return message
 

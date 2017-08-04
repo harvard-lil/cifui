@@ -51,7 +51,11 @@ def receive_sms(request):
 
     # process
     if user:
-        vote = Vote.objects.filter(user=user).order_by('-sent_date').first()
+
+        # try to find vote
+        vote = Vote.objects.filter(user=user, sent_message__server_number=server_number).order_by('-sent_date').first()
+        if not vote:
+            return HttpResponse()
 
         # only let them vote once
         if vote.reply_date:
@@ -62,7 +66,7 @@ def receive_sms(request):
         m = re.match(r'^[\s\.\']*(yes|no)[\s\.\']*$', text, flags=re.I)
         if not m:
             # can't parse response
-            user.profile.send_sms("We don't understand your response. Please respond 'yes' or 'no'.")
+            user.profile.send_sms("We don't understand your response. Please respond 'yes' or 'no'.", server_number=server_number)
             return HttpResponse()
 
         # record vote
@@ -83,7 +87,7 @@ def receive_sms(request):
             "yes, a court would find fair use" if fair_use_vote else "no, a court would not find fair use",
             ordinal(vote_count)
         )
-        user.profile.send_sms(message)
+        user.profile.send_sms(message, server_number=server_number)
 
     return HttpResponse()
 
