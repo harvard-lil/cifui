@@ -1,7 +1,7 @@
-import json
-
+import textwrap
 import jsonfield
 import plivo
+import time
 import twilio.rest
 import pytz
 
@@ -80,19 +80,41 @@ class SMSMessage(models.Model):
     success = models.NullBooleanField()
     api_response = jsonfield.JSONField(blank=True, null=True)
 
+    MAX_LENGTH = 700  # technically 737 for Plivo but let's be conservative
+
     def send(self):
         sms_client = plivo.RestAPI(settings.PLIVO_AUTH_ID, settings.PLIVO_AUTH_TOKEN)
+        text_parts = textwrap.wrap(self.text, self.MAX_LENGTH)
+        api_responses = []
+        self.success = False
         try:
-            response = sms_client.send_message({
-                'src': self.server_number.phone_number,
-                'dst' : self.phone_number,
-                'text' : self.text
-            })
-            self.success = response[0] == 202
-            self.api_response = response
+            for i, text_part in enumerate(text_parts):
+
+                # If we're splitting a message into multiple parts, there's no guarantee that they will arrive in order.
+                # For now hardcode a 5-second sleep.
+                if i > 0:
+                    time.sleep(5)
+
+                # Add ellipses ...
+                if i > 0:
+                    text_part = '... ' + text_part
+                if i < len(text_parts) - 1:
+                    text_part = text_part + ' ...'
+
+                response = sms_client.send_message({
+                    'src': self.server_number.phone_number,
+                    'dst' : self.phone_number,
+                    'text' : text_part
+                })
+                api_responses.append(response)
+                if response[0] != 202:
+                    break
+            else:
+                # if we didn't break, all messages were successfully submitted
+                self.success = True
         except Exception as e:
-            self.success = False
-            self.api_response = str(e)
+            api_responses.append(str(e))
+        self.api_response = api_responses
         self.save()
 
 class SMSResponse(models.Model):
